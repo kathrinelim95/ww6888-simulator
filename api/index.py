@@ -1,7 +1,7 @@
 """Vercel serverless entry point.
 
 Uses in-memory SQLite with StaticPool so each warm instance has a consistent
-database during its lifetime. The database is seeded on first request.
+database during its lifetime. The database is seeded on cold start.
 """
 
 import os
@@ -29,9 +29,4 @@ Base.metadata.create_all(_engine)
 with Session(_engine) as session:
     seed_demo(session, "SimAdmin2026!", "SimPlayer2026!")
 
-_app = create_app(engine=_engine)
-
-
-def handler(request):
-    """ASGI handler for Vercel Python."""
-    return _app(request)
+app = create_app(engine=_engine)
