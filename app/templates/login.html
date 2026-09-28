@@ -1,17 +1,63 @@
 {% extends "base.html" %}
-{% block content %}
-<main class="login-shell">
-  <section class="login-card">
-    <div class="brand-mark">VC</div>
-    <p class="kicker">CONTROL ENVIRONMENT</p>
-    <h1>Simulation Console</h1>
-    <p class="muted">Sign in to the closed-loop virtual-credit test platform.</p>
-    {% if error %}<div class="alert error">{{ error }}</div>{% endif %}
-    <form method="post" action="/login" class="form-stack">
-      <label>Username<input name="username" autocomplete="username" required></label>
-      <label>Password<input type="password" name="password" autocomplete="current-password" required></label>
-      <button type="submit">Sign in</button>
+{% block title %}{{ title }}{% endblock %}
+{% block shell %}
+<div class="landing-wrapper">
+  <!-- Header -->
+  <header class="header-area">
+    <div class="header-inner">
+      <div class="container">
+        <div class="logo-menu-wrap">
+          <div class="logo">
+            <span class="logo-text">SG4D Sim</span>
+          </div>
+          <nav class="menu">
+            <ul class="mainmenu">
+              <li><a href="#features">Home</a></li>
+              <li><a href="#about">About</a></li>
+              <li><a href="#services">Services</a></li>
+              <li><a href="#contact">Contact</a></li>
+              <li><a class="btn-login" href="javascript:void(0)" onclick="document.getElementById('loginOverlay').classList.add('active')">Sign In</a></li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Slider -->
+  <div class="slider">
+    <div class="container">
+      <div class="slider__content text-white">
+        <p class="agency-home-sub-title">SIMULATION PLATFORM — NO CASH VALUE</p>
+        <h1 class="slider__title">4D Betting Simulation</h1>
+        <p class="slider__subtitle">A closed-loop virtual-credit test environment mirroring observable management workflows.</p>
+        <div class="slider__button">
+          <a href="javascript:void(0)" class="button" onclick="document.getElementById('loginOverlay').classList.add('active')">SIGN IN</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Login Modal -->
+<div class="login-overlay{% if error %} active{% endif %}" id="loginOverlay">
+  <div class="login-modal">
+    <div class="sim-banner">
+      <span>SIMULATION ONLY — NO CASH VALUE</span>
+    </div>
+    <h2>Sign In</h2>
+    {% if error %}
+    <div class="error-msg">{{ error }}</div>
+    {% endif %}
+    <form method="post" action="/login">
+      <input type="text" name="username" class="form-control" placeholder="User Name" required autofocus>
+      <input type="password" name="password" class="form-control" placeholder="Password" required>
+      <div class="lang-options">
+        <label><input type="radio" name="lang" value="en" checked> English</label>
+        <label><input type="radio" name="lang" value="zh"> 简体中文</label>
+      </div>
+      <button type="submit" class="btn-signin">Sign In</button>
     </form>
-  </section>
-</main>
+  </div>
+</div>
 {% endblock %}

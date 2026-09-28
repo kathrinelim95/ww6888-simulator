@@ -1,31 +1,71 @@
 {% extends "base.html" %}
 {% block shell %}
-<div class="app-shell">
-  <aside class="sidebar">
-    <div class="sidebar-brand"><span>VC</span><strong>Simulation</strong></div>
+<div class="auth-shell">
+  <!-- Sidebar -->
+  <aside class="auth-sidebar">
+    <div class="sidebar-brand"><a href="/dashboard">SG4D Sim</a></div>
     <nav>
-      <a class="{{ 'active' if active == 'dashboard' else '' }}" href="/dashboard">Dashboard</a>
-      <a class="{{ 'active' if active == 'betting' else '' }}" href="/betting">Betting Simulator</a>
-      <a class="{{ 'active' if active == 'results' else '' }}" href="/results">Results</a>
-      <a class="{{ 'active' if active == 'payout-guide' else '' }}" href="/payout-guide">Payout Guide</a>
-      <a class="{{ 'active' if active == 'announcements' else '' }}" href="/announcements">Announcements</a>
+      <a class="{{ 'active' if active == 'dashboard' else '' }}" href="/dashboard">Main</a>
+      <a class="{{ 'active' if active in ['betting','payout-guide','telegram-help'] else '' }}" href="/betting">Betting</a>
+      <a class="sub-item {{ 'active' if active == 'betting' else '' }}" href="/betting">Simple Bet</a>
+      <a class="sub-item" href="/betting">Mass Bet</a>
+      <a class="sub-item" href="/betting">Wildcard Bet</a>
+      <a class="sub-item" href="/betting">Saved Bet</a>
+      <a class="sub-item" href="/betting">Fixed Bet</a>
+      <a class="sub-item {{ 'active' if active == 'telegram-help' else '' }}" href="/telegram-help">Telegram Help</a>
       <a class="{{ 'active' if active == 'reports' else '' }}" href="/reports">Reports</a>
-      <a class="{{ 'active' if active == 'statement' else '' }}" href="/statement">Statement</a>
-      {% if user.role.value != 'player' %}<a class="{{ 'active' if active == 'downlines' else '' }}" href="/downlines">Downlines</a>{% endif %}
-      {% if user.role.value == 'admin' %}<a class="{{ 'active' if active == 'accounts' else '' }}" href="/accounts">Accounts</a>
-      <a class="{{ 'active' if active == 'logs' else '' }}" href="/logs">View Log</a>{% endif %}
-      <a class="{{ 'active' if active == 'telegram-help' else '' }}" href="/telegram-help">Telegram Help</a>
-      <a class="{{ 'active' if active == 'draw-dates' else '' }}" href="/draw-dates">Draw Dates</a>
+      <a class="{{ 'active' if active in ['accounts','downlines','statement'] else '' }}" href="/accounts">Account</a>
+      {% if user.role.value != 'player' %}
+      <a class="sub-item {{ 'active' if active == 'downlines' else '' }}" href="/downlines">Downlines</a>
+      {% endif %}
+      <a class="sub-item {{ 'active' if active == 'statement' else '' }}" href="/statement">Statement</a>
+      {% if user.role.value == 'admin' %}
+      <a class="sub-item {{ 'active' if active == 'accounts' else '' }}" href="/accounts">Sub Account</a>
+      {% endif %}
+      {% if user.role.value == 'admin' %}
+      <a class="{{ 'active' if active == 'logs' else '' }}" href="/logs">View Log</a>
+      {% endif %}
+      <a class="{{ 'active' if active == 'results' else '' }}" href="/results">Result</a>
+      <a class="{{ 'active' if active == 'payout-guide' else '' }}" href="/payout-guide">Payout Guide</a>
+      <a class="{{ 'active' if active == 'announcements' else '' }}" href="/announcements">Announcement</a>
+      <a class="{{ 'active' if active == 'draw-dates' else '' }}" href="/draw-dates">Draw Date</a>
       <a class="{{ 'active' if active == 'profile' else '' }}" href="/profile">My Profile</a>
     </nav>
-    <a class="logout" href="/logout">Sign out</a>
+    <div class="sidebar-credit">
+      <div class="credit-label">Credit</div>
+      <div class="credit-value">{{ "{:,.2f}".format(balance) }}</div>
+      <div class="credit-label">Credit Available</div>
+      <div class="credit-value">{{ "{:,.2f}".format(balance) }}</div>
+      <div class="credit-label">Credit Balance</div>
+      <div class="credit-value green">0.00</div>
+      {% if markets is defined and markets %}
+      {% for m in markets[:3] %}
+      <div class="draw-date">{{ m.name }} — {{ m.closes_at.strftime('%a, %d %b %Y') }}</div>
+      {% endfor %}
+      {% endif %}
+    </div>
+    <div class="sidebar-logout">
+      <a href="/logout">Sign Out</a>
+    </div>
   </aside>
-  <main class="workspace">
-    <header class="topbar">
-      <div><p class="kicker">VIRTUAL-CREDIT OPERATIONS</p><h1>{{ page_title }}</h1></div>
-      <div class="user-chip"><strong>{{ user.username }}</strong><span>{{ user.role.value }}</span></div>
-    </header>
-    <section class="notice"><strong>No cash value.</strong> Every balance movement is a test ledger entry.</section>
+
+  <!-- Top bar -->
+  <div class="auth-topbar">
+    <div class="topbar-notice">
+      4D Betting Close at 6:19PM · <span class="market-open">(OPEN)</span>
+    </div>
+    <div class="topbar-right">
+      <span class="sim-badge">SIMULATION</span>
+      <a class="user-link" href="/profile">{{ user.username }}</a>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <main class="auth-content">
+    <div class="sim-notice">
+      <strong>SIMULATION ONLY — No cash value.</strong> Every balance is a non-redeemable test credit.
+    </div>
+    <h1 class="page-title">{{ page_title }}</h1>
     {% block app_content %}{% endblock %}
   </main>
 </div>

@@ -121,12 +121,16 @@ def create_app(engine: Engine | None = None) -> FastAPI:
             if user is None:
                 return RedirectResponse("/login", status_code=303)
             balance = get_balance(session, user)
+            markets = list(session.scalars(select(Market).order_by(Market.closes_at).limit(3)).unique())
+            announcements = list(session.scalars(select(Announcement).where(Announcement.active.is_(True)).order_by(Announcement.created_at.desc()).limit(5)))
             return templates.TemplateResponse(
                 request=request,
                 name="dashboard.html",
                 context={
                     "user": user,
                     "balance": balance,
+                    "markets": markets,
+                    "announcements": announcements,
                     "title": "Dashboard",
                     "page_title": "Dashboard",
                     "active": "dashboard",
@@ -239,7 +243,7 @@ def create_app(engine: Engine | None = None) -> FastAPI:
         kicker: str,
         description: str,
         **data,
-    ):
+    ) -> templates.TemplateResponse:
         context = {
             "user": user,
             "active": active,
@@ -249,6 +253,8 @@ def create_app(engine: Engine | None = None) -> FastAPI:
             "kicker": kicker,
             "description": description,
             "badge": "Sandbox",
+            "balance": get_balance(session, user),
+            "markets": list(session.scalars(select(Market).order_by(Market.closes_at).limit(3)).unique()),
             **data,
         }
         return templates.TemplateResponse(

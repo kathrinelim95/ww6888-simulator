@@ -1,12 +1,52 @@
 {% extends "app_base.html" %}
+{% block title %}Dashboard{% endblock %}
 {% block app_content %}
-<section class="metric-grid">
-  <article><span>Available test credit</span><strong>{{ "{:,.2f}".format(balance) }}</strong></article>
-  <article><span>Account role</span><strong>{{ user.role.value|title }}</strong></article>
-  <article><span>Environment</span><strong>Sandbox</strong></article>
-</section>
-<section class="panel">
-  <div class="panel-head"><div><p class="kicker">CONTROL CENTRE</p><h2>Dashboard</h2></div><span class="status">Active</span></div>
-  <p class="muted">Use the navigation to manage test markets, virtual entries, settlements, accounts and reports.</p>
-</section>
+<div class="metric-row">
+  <div class="metric-card">
+    <div class="metric-label">Credit</div>
+    <div class="metric-value">{{ "{:,.2f}".format(balance) }}</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Credit Available</div>
+    <div class="metric-value">{{ "{:,.2f}".format(balance) }}</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Credit Balance</div>
+    <div class="metric-value" style="color:#4CAF50">0.00</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Market Status</div>
+    <div class="metric-value" style="color:#4CAF50;font-size:18px">OPEN</div>
+  </div>
+</div>
+
+<div class="market-section">
+  <h3>Draw Dates</h3>
+  <table class="data-table">
+    <thead><tr><th>Draw</th><th>Date</th><th>Status</th></tr></thead>
+    <tbody>
+    {% if markets is defined and markets %}
+    {% for m in markets %}
+    <tr><td>{{ m.name }}</td><td>{{ m.closes_at.strftime('%a, %d %b %Y') }}</td><td><span class="tag {{ m.status.value }}">{{ m.status.value|title }}</span></td></tr>
+    {% endfor %}
+    {% else %}
+    <tr><td colspan="3" class="empty">No draw dates configured.</td></tr>
+    {% endif %}
+    </tbody>
+  </table>
+</div>
+
+<div class="market-section">
+  <h3>Announcements</h3>
+  {% if announcements is defined and announcements %}
+  {% for a in announcements %}
+  <div style="padding:10px 0;border-bottom:1px solid #eee">
+    <strong>{{ a.title }}</strong>
+    <p style="color:#888;font-size:13px;margin-top:5px">{{ a.body }}</p>
+  </div>
+  {% endfor %}
+  {% else %}
+  <p style="color:#999">No announcements.</p>
+  {% endif %}
+</div>
 {% endblock %}

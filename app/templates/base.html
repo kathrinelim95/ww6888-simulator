@@ -1,13 +1,12 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ title or "Simulation Console" }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}SG4D Simulation{% endblock %}</title>
   <link rel="stylesheet" href="/static/app.css">
 </head>
 <body>
-  <div class="sim-banner">SIMULATION ONLY <span>Virtual test credits. No cash value.</span></div>
-  {% block shell %}{% block content %}{% endblock %}{% endblock %}
+{% block shell %}{% endblock %}
 </body>
 </html>

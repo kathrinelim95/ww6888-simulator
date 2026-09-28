@@ -1,38 +1,57 @@
 {% extends "app_base.html" %}
+{% block title %}Betting Simulator{% endblock %}
 {% block app_content %}
 {% if ticket_no %}<div class="alert success"><strong>Ticket accepted.</strong> Reference {{ ticket_no }}</div>{% endif %}
 {% if error %}<div class="alert error">{{ error }}</div>{% endif %}
-<section class="metric-grid compact">
-  <article><span>Available test credit</span><strong>{{ "{:,.2f}".format(balance) }}</strong></article>
-  <article><span>Open markets</span><strong>{{ markets|length }}</strong></article>
-  <article><span>Pending tickets</span><strong>{{ tickets|selectattr('status.value','equalto','pending')|list|length }}</strong></article>
-</section>
-<section class="panel">
-  <div class="panel-head"><div><p class="kicker">ENTRY DESK</p><h2>New simulation ticket</h2></div><span class="status">Test credits</span></div>
-  {% if markets %}
-    {% for market in markets %}
-    <div class="market-block">
-      <div><strong>{{ market.name }}</strong><span class="muted">Closes {{ market.closes_at }}</span></div>
-      <div class="selection-grid">
-        {% for selection in market.selections %}
-        <form method="post" action="/betting/place" class="selection-card">
-          <input type="hidden" name="selection_id" value="{{ selection.id }}">
-          <div><strong>{{ selection.code }}</strong><span>{{ selection.label }}</span></div>
-          <div class="odds">{{ "{:.2f}".format(selection.odds) }}x</div>
-          <label>Virtual stake<input name="stake" type="number" min="0.01" step="0.01" required></label>
-          <button type="submit">Submit test entry</button>
-        </form>
-        {% endfor %}
-      </div>
+
+<div class="metric-row">
+  <div class="metric-card">
+    <div class="metric-label">Available Test Credit</div>
+    <div class="metric-value">{{ "{:,.2f}".format(balance) }}</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Open Markets</div>
+    <div class="metric-value">{{ markets|length }}</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Pending Tickets</div>
+    <div class="metric-value">{{ tickets|selectattr('status.value','equalto','pending')|list|length }}</div>
+  </div>
+</div>
+
+{% for market in markets %}
+<div class="market-section">
+  <h3>{{ market.name }} <span style="font-size:12px;color:#888;margin-left:10px">Closes {{ market.closes_at }}</span></h3>
+  <div class="selection-grid">
+    {% for selection in market.selections %}
+    <div class="selection-card">
+      <div class="sel-number">{{ selection.code }}</div>
+      <div class="sel-odds">{{ "{:.2f}".format(selection.odds) }}x</div>
+      <div style="font-size:12px;color:#888;margin-bottom:8px">{{ selection.label }}</div>
+      <form method="post" action="/betting/place" class="inline-form" style="flex-direction:column">
+        <input type="hidden" name="selection_id" value="{{ selection.id }}">
+        <input name="stake" type="number" min="0.01" step="0.01" placeholder="Stake" required>
+        <button type="submit" class="btn btn-sm" style="margin-top:5px;width:100%">Submit</button>
+      </form>
     </div>
     {% endfor %}
-  {% else %}<div class="empty">No open simulation markets.</div>{% endif %}
-</section>
-<section class="panel">
-  <div class="panel-head"><h2>Ticket history</h2></div>
-  <div class="table-wrap"><table><thead><tr><th>Reference</th><th>Selection</th><th>Stake</th><th>Potential</th><th>Status</th></tr></thead><tbody>
-  {% for ticket in tickets %}<tr><td>{{ ticket.ticket_no }}</td><td>{{ ticket.selection.code }}</td><td>{{ "{:,.2f}".format(ticket.stake) }}</td><td>{{ "{:,.2f}".format(ticket.potential_payout) }}</td><td><span class="tag">{{ ticket.status.value }}</span></td></tr>
-  {% else %}<tr><td colspan="5" class="empty">No simulation tickets yet.</td></tr>{% endfor %}
-  </tbody></table></div>
-</section>
+  </div>
+</div>
+{% else %}
+<div class="market-section"><p style="color:#999">No open simulation markets.</p></div>
+{% endfor %}
+
+<div class="market-section">
+  <h3>Ticket History</h3>
+  <table class="data-table">
+    <thead><tr><th>Reference</th><th>Selection</th><th>Stake</th><th>Potential</th><th>Status</th></tr></thead>
+    <tbody>
+    {% for ticket in tickets %}
+    <tr><td>{{ ticket.ticket_no }}</td><td>{{ ticket.selection.code }}</td><td>{{ "{:,.2f}".format(ticket.stake) }}</td><td>{{ "{:,.2f}".format(ticket.potential_payout) }}</td><td><span class="tag {{ ticket.status.value }}">{{ ticket.status.value|title }}</span></td></tr>
+    {% else %}
+    <tr><td colspan="5" class="empty">No simulation tickets yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
 {% endblock %}
