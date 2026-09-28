@@ -1,57 +1,166 @@
 {% extends "app_base.html" %}
-{% block title %}Betting Simulator{% endblock %}
+{% block title %}Simple Bet{% endblock %}
 {% block app_content %}
 {% if ticket_no %}<div class="alert success"><strong>Ticket accepted.</strong> Reference {{ ticket_no }}</div>{% endif %}
 {% if error %}<div class="alert error">{{ error }}</div>{% endif %}
 
-<div class="metric-row">
-  <div class="metric-card">
-    <div class="metric-label">Available Test Credit</div>
-    <div class="metric-value">{{ "{:,.2f}".format(balance) }}</div>
-  </div>
-  <div class="metric-card">
-    <div class="metric-label">Open Markets</div>
-    <div class="metric-value">{{ markets|length }}</div>
-  </div>
-  <div class="metric-card">
-    <div class="metric-label">Pending Tickets</div>
-    <div class="metric-value">{{ tickets|selectattr('status.value','equalto','pending')|list|length }}</div>
-  </div>
+<!-- Top bar with Entry Manual link -->
+<div style="text-align:right;margin-bottom:10px">
+  <a href="/betting" style="font-size:13px;color:#FF5A60">Entry Manual</a>
 </div>
 
-{% for market in markets %}
-<div class="market-section">
-  <h3>{{ market.name }} <span style="font-size:12px;color:#888;margin-left:10px">Closes {{ market.closes_at }}</span></h3>
-  <div class="selection-grid">
-    {% for selection in market.selections %}
-    <div class="selection-card">
-      <div class="sel-number">{{ selection.code }}</div>
-      <div class="sel-odds">{{ "{:.2f}".format(selection.odds) }}x</div>
-      <div style="font-size:12px;color:#888;margin-bottom:8px">{{ selection.label }}</div>
-      <form method="post" action="/betting/place" class="inline-form" style="flex-direction:column">
-        <input type="hidden" name="selection_id" value="{{ selection.id }}">
-        <input name="stake" type="number" min="0.01" step="0.01" placeholder="Stake" required>
-        <button type="submit" class="btn btn-sm" style="margin-top:5px;width:100%">Submit</button>
-      </form>
-    </div>
+<!-- Draw dates row -->
+<div style="background:#f8f8f8;padding:10px 15px;border:1px solid #ddd;border-radius:6px;margin-bottom:15px;font-size:13px">
+  <strong>Draw Date :</strong>
+  {% if markets is defined and markets %}
+    {% for m in markets %}
+    <span style="margin-left:15px">{{ m.closes_at.strftime('%a, %d %b %Y') }}</span>
     {% endfor %}
+  {% else %}
+    <span style="margin-left:15px;color:#999">No draw dates</span>
+  {% endif %}
+</div>
+
+<!-- Selection row -->
+<div style="display:flex;gap:20px;align-items:center;margin-bottom:15px;font-size:13px;flex-wrap:wrap">
+  <div style="display:flex;align-items:center;gap:8px">
+    <label>Select Day :</label>
+    <select id="ddlDay" style="padding:6px 10px;border:1px solid #ddd;border-radius:4px;font-size:13px">
+      <option value="0">0=&lt;Wed, Sat &amp; Sun&gt;</option>
+      <option value="2">2=&lt;Sat &amp; Sun&gt;</option>
+      <option value="3" selected>3=&lt;Wed&gt;</option>
+      <option value="6">6=&lt;Sat&gt;</option>
+      <option value="7">7=&lt;Sun&gt;</option>
+    </select>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <label>Page :</label>
+    <input type="text" id="txtPage" value="" style="width:80px;padding:6px 10px;border:1px solid #ddd;border-radius:4px;font-size:13px" placeholder="">
+  </div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <label>Account :</label>
+    <input type="text" id="txtAccount" value="{{ user.username }}" style="width:200px;padding:6px 10px;border:1px solid #ddd;border-radius:4px;font-size:13px;background:#f5f5f5" readonly>
   </div>
 </div>
-{% else %}
-<div class="market-section"><p style="color:#999">No open simulation markets.</p></div>
-{% endfor %}
 
-<div class="market-section">
-  <h3>Ticket History</h3>
+<!-- Credit summary -->
+<div style="background:#f8f8f8;padding:12px 15px;border:1px solid #ddd;border-radius:6px;margin-bottom:15px;font-size:13px">
+  <div style="display:flex;gap:30px;flex-wrap:wrap">
+    <span><strong>Big :</strong> {{ "{:,.2f}".format(big_total) }}</span>
+    <span><strong>Small :</strong> {{ "{:,.2f}".format(small_total) }}</span>
+    <span><strong>iBig :</strong> {{ "{:,.2f}".format(ibig_total) }}</span>
+    <span><strong>iSmall :</strong> {{ "{:,.2f}".format(ismall_total) }}</span>
+    <span><strong>kBig :</strong> {{ "{:,.2f}".format(kbig_total) }}</span>
+    <span><strong>kSmall :</strong> {{ "{:,.2f}".format(ksmall_total) }}</span>
+    <span style="margin-left:auto"><strong>Total : $</strong> {{ "{:,.2f}".format(grand_total) }}</span>
+  </div>
+  <div style="margin-top:8px;color:#888">
+    Credit：{{ "{:,.2f}".format(balance) }},  Balance：0.00,  Available：{{ "{:,.2f}".format(balance) }}
+  </div>
+</div>
+
+<!-- Action buttons -->
+<div style="display:flex;gap:10px;margin-bottom:15px">
+  <button type="button" class="btn" onclick="clearBets()">Clear</button>
+  <button type="button" class="btn" onclick="calculateBets()">Calculate</button>
+  <button type="button" class="btn secondary" onclick="alert('Edit mode: click a row to edit')">Edit</button>
+  <button type="submit" form="betForm" class="btn">Submit</button>
+</div>
+
+<!-- Bet entry table -->
+<form method="post" action="/betting/place" id="betForm">
+<table class="data-table" id="betTable">
+  <thead>
+    <tr>
+      <th style="width:40px">No</th>
+      <th style="width:50px">D</th>
+      <th>Num</th>
+      <th>Big</th>
+      <th>Small</th>
+      <th style="width:70px">T</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for i in range(1, 11) %}
+    <tr>
+      <td>{{ i }}.</td>
+      <td>
+        <select name="day_{{ i }}" style="width:50px;padding:4px;border:1px solid #ccc;border-radius:3px;font-size:12px">
+          <option value="3" selected>3</option>
+          <option value="0">0</option>
+          <option value="2">2</option>
+          <option value="6">6</option>
+          <option value="7">7</option>
+        </select>
+      </td>
+      <td><input type="text" name="num_{{ i }}" maxlength="4" pattern="[0-9*]{1,4}" style="width:120px;padding:4px 8px;border:1px solid #ccc;border-radius:3px;font-size:13px" placeholder=""></td>
+      <td><input type="number" name="big_{{ i }}" min="0" step="0.01" style="width:120px;padding:4px 8px;border:1px solid #ccc;border-radius:3px;font-size:13px" placeholder="0.00" oninput="updateTotals()"></td>
+      <td><input type="number" name="small_{{ i }}" min="0" step="0.01" style="width:120px;padding:4px 8px;border:1px solid #ccc;border-radius:3px;font-size:13px" placeholder="0.00" oninput="updateTotals()"></td>
+      <td>
+        <select name="type_{{ i }}" style="width:65px;padding:4px;border:1px solid #ccc;border-radius:3px;font-size:12px">
+          <option value="N">N</option>
+          <option value="i">i</option>
+          <option value="r">r</option>
+          <option value="k">k</option>
+        </select>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</form>
+
+<!-- Ticket history -->
+<div style="margin-top:25px">
+  <h3 style="font-size:18px;margin-bottom:15px;color:#333">Ticket History</h3>
   <table class="data-table">
-    <thead><tr><th>Reference</th><th>Selection</th><th>Stake</th><th>Potential</th><th>Status</th></tr></thead>
+    <thead><tr><th>Reference</th><th>Number</th><th>Big</th><th>Small</th><th>Type</th><th>Day</th><th>Status</th></tr></thead>
     <tbody>
     {% for ticket in tickets %}
-    <tr><td>{{ ticket.ticket_no }}</td><td>{{ ticket.selection.code }}</td><td>{{ "{:,.2f}".format(ticket.stake) }}</td><td>{{ "{:,.2f}".format(ticket.potential_payout) }}</td><td><span class="tag {{ ticket.status.value }}">{{ ticket.status.value|title }}</span></td></tr>
+    <tr>
+      <td>{{ ticket.ticket_no }}</td>
+      <td>{{ ticket.selection.code }}</td>
+      <td>{{ "{:,.2f}".format(ticket.stake) if ticket.stake > 0 else '-' }}</td>
+      <td>{{ "{:,.2f}".format(ticket.stake) if ticket.stake > 0 else '-' }}</td>
+      <td>{{ ticket.selection.label[:1] }}</td>
+      <td>3</td>
+      <td><span class="tag {{ ticket.status.value }}">{{ ticket.status.value|title }}</span></td>
+    </tr>
     {% else %}
-    <tr><td colspan="5" class="empty">No simulation tickets yet.</td></tr>
+    <tr><td colspan="7" class="empty">No simulation tickets yet.</td></tr>
     {% endfor %}
     </tbody>
   </table>
 </div>
+
+<script>
+function updateTotals() {
+  var big = 0, small = 0, ibig = 0, ismall = 0, kbig = 0, ksmall = 0;
+  for (var i = 1; i <= 10; i++) {
+    var b = parseFloat(document.querySelector('[name="big_' + i + '"]').value) || 0;
+    var s = parseFloat(document.querySelector('[name="small_' + i + '"]').value) || 0;
+    var t = document.querySelector('[name="type_' + i + '"]').value;
+    if (t === 'N') { big += b; small += s; }
+    else if (t === 'i') { ibig += b; ismall += s; }
+    else if (t === 'k') { kbig += b; ksmall += s; }
+  }
+  var total = big + small + ibig + ismall + kbig + ksmall;
+  // Update display if elements exist
+  var totalEl = document.querySelector('.total-display');
+  if (totalEl) totalEl.textContent = total.toFixed(2);
+}
+function clearBets() {
+  for (var i = 1; i <= 10; i++) {
+    document.querySelector('[name="num_' + i + '"]').value = '';
+    document.querySelector('[name="big_' + i + '"]').value = '';
+    document.querySelector('[name="small_' + i + '"]').value = '';
+    document.querySelector('[name="type_' + i + '"]').value = 'N';
+  }
+  updateTotals();
+}
+function calculateBets() {
+  updateTotals();
+  alert('Total calculated. See the credit summary above.');
+}
+</script>
 {% endblock %}
