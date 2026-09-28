@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block shell %}
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand"><span>VC</span><strong>Simulation</strong></div>
+    <nav>
+      <a class="{{ 'active' if active == 'dashboard' else '' }}" href="/dashboard">Dashboard</a>
+      <a class="{{ 'active' if active == 'betting' else '' }}" href="/betting">Betting Simulator</a>
+      <a class="{{ 'active' if active == 'results' else '' }}" href="/results">Results</a>
+      <a class="{{ 'active' if active == 'payout-guide' else '' }}" href="/payout-guide">Payout Guide</a>
+      <a class="{{ 'active' if active == 'announcements' else '' }}" href="/announcements">Announcements</a>
+      <a class="{{ 'active' if active == 'reports' else '' }}" href="/reports">Reports</a>
+      <a class="{{ 'active' if active == 'statement' else '' }}" href="/statement">Statement</a>
+      {% if user.role.value != 'player' %}<a class="{{ 'active' if active == 'downlines' else '' }}" href="/downlines">Downlines</a>{% endif %}
+      {% if user.role.value == 'admin' %}<a class="{{ 'active' if active == 'accounts' else '' }}" href="/accounts">Accounts</a>
+      <a class="{{ 'active' if active == 'logs' else '' }}" href="/logs">View Log</a>{% endif %}
+      <a class="{{ 'active' if active == 'telegram-help' else '' }}" href="/telegram-help">Telegram Help</a>
+      <a class="{{ 'active' if active == 'draw-dates' else '' }}" href="/draw-dates">Draw Dates</a>
+      <a class="{{ 'active' if active == 'profile' else '' }}" href="/profile">My Profile</a>
+    </nav>
+    <a class="logout" href="/logout">Sign out</a>
+  </aside>
+  <main class="workspace">
+    <header class="topbar">
+      <div><p class="kicker">VIRTUAL-CREDIT OPERATIONS</p><h1>{{ page_title }}</h1></div>
+      <div class="user-chip"><strong>{{ user.username }}</strong><span>{{ user.role.value }}</span></div>
+    </header>
+    <section class="notice"><strong>No cash value.</strong> Every balance movement is a test ledger entry.</section>
+    {% block app_content %}{% endblock %}
+  </main>
+</div>
+{% endblock %}

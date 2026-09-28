@@ -1,0 +1,87 @@
+{% extends "app_base.html" %}
+{% block app_content %}
+<section class="panel">
+  <div class="panel-head"><div><p class="kicker">{{ kicker }}</p><h2>{{ heading }}</h2></div>{% if badge %}<span class="status">{{ badge }}</span>{% endif %}</div>
+  {% if description %}<p class="muted">{{ description }}</p>{% endif %}
+
+  {% if active == 'announcements' %}
+    <div class="stack-list">{% for item in announcements %}<article><h3>{{ item.title }}</h3><p>{{ item.body }}</p><small>{{ item.created_at }}</small></article>{% else %}<div class="empty">No announcements.</div>{% endfor %}</div>
+  {% elif active in ['results', 'draw-dates'] %}
+    {% if active == 'draw-dates' and user.role.value == 'admin' %}
+    <form method="post" action="/markets/create" class="admin-form">
+      <label>Market name<input name="name" required></label>
+      <label>Close time (UTC)<input name="closes_at" type="datetime-local" required></label>
+      <label>Selection code<input name="code" required></label>
+      <label>Selection label<input name="label" required></label>
+      <label>Decimal odds<input name="odds" type="number" min="0.01" step="0.01" required></label>
+      <button type="submit">Create market</button>
+    </form>
+    {% endif %}
+    <div class="table-wrap"><table><thead><tr><th>Market / draw</th><th>Close time</th><th>Status</th><th>Selections</th></tr></thead><tbody>
+    {% for market in markets %}<tr><td>{{ market.name }}</td><td>{{ market.closes_at }}</td><td><span class="tag">{{ market.status.value }}</span></td><td>{{ market.selections|length }}</td></tr>{% else %}<tr><td colspan="4" class="empty">No markets configured.</td></tr>{% endfor %}
+    </tbody></table></div>
+  {% elif active == 'reports' %}
+    <section class="metric-grid compact"><article><span>Total virtual stake</span><strong>{{ "{:,.2f}".format(total_stake) }}</strong></article><article><span>Settled virtual payout</span><strong>{{ "{:,.2f}".format(total_settled) }}</strong></article><article><span>Tickets</span><strong>{{ tickets|length }}</strong></article></section>
+    <div class="table-wrap"><table><thead><tr><th>Reference</th><th>User</th><th>Stake</th><th>Settlement</th><th>Status</th><th>Action</th></tr></thead><tbody>
+    {% for ticket in tickets %}<tr><td>{{ ticket.ticket_no }}</td><td>{{ ticket.user.username }}</td><td>{{ "{:,.2f}".format(ticket.stake) }}</td><td>{{ "{:,.2f}".format(ticket.settled_amount) }}</td><td><span class="tag">{{ ticket.status.value }}</span></td><td>{% if user.role.value == 'admin' and ticket.status.value == 'pending' %}<form method="post" action="/settlements/{{ ticket.id }}" class="inline-actions"><button name="outcome" value="won">Win</button><button name="outcome" value="lost" class="secondary">Lose</button><button name="outcome" value="void" class="secondary">Void</button></form>{% else %}-{% endif %}</td></tr>{% else %}<tr><td colspan="6" class="empty">No report data.</td></tr>{% endfor %}
+    </tbody></table></div>
+  {% elif active == 'accounts' %}
+    <form method="post" action="/accounts/create" class="admin-form">
+      <label>Username<input name="username" required></label>
+      <label>Temporary password<input name="password" type="password" minlength="8" required></label>
+      <label>Role<select name="role"><option value="player">Player</option><option value="agent">Agent</option><option value="admin">Admin</option></select></label>
+      <label>Parent<select name="parent_id"><option value="">None</option>{% for parent in accounts %}<option value="{{ parent.id }}">{{ parent.username }}</option>{% endfor %}</select></label>
+      <button type="submit">Create account</button>
+    </form>
+    <div class="table-wrap"><table><thead><tr><th>Username</th><th>Role</th><th>Parent</th><th>Test-credit balance</th><th>Status</th><th>Allocate test credit</th></tr></thead><tbody>
+    {% for account in accounts %}<tr><td>{{ account.username }}</td><td>{{ account.role.value }}</td><td>{{ account.parent.username if account.parent else '-' }}</td><td>{{ "{:,.2f}".format(balances[account.id]) }}</td><td>{{ 'Active' if account.active else 'Disabled' }}{% if account.id != user.id %}<form method="post" action="/accounts/{{ account.id }}/status" class="inline-actions"><input type="hidden" name="active" value="{{ 'false' if account.active else 'true' }}"><button type="submit" class="secondary">{{ 'Disable' if account.active else 'Enable' }}</button></form>{% endif %}</td><td><form method="post" action="/accounts/{{ account.id }}/credit" class="inline-actions"><input name="amount" type="number" min="0.01" step="0.01" placeholder="Amount" required><input name="description" value="Test allocation" required><button type="submit">Allocate</button></form></td></tr>{% endfor %}
+    </tbody></table></div>
+  {% elif active == 'logs' %}
+    <div class="table-wrap"><table><thead><tr><th>Time</th><th>User</th><th>Action</th><th>Entity</th><th>Details</th></tr></thead><tbody>
+    {% for log in logs %}<tr><td>{{ log.created_at }}</td><td>{{ log.user.username if log.user else 'system' }}</td><td>{{ log.action }}</td><td>{{ log.entity_type }} {{ log.entity_id or '' }}</td><td>{{ log.details }}</td></tr>{% else %}<tr><td colspan="5" class="empty">No audit events recorded.</td></tr>{% endfor %}
+    </tbody></table></div>
+  {% elif active == 'profile' %}
+    {% if password_error %}<div class="alert error">{{ password_error }}</div>{% endif %}
+    {% if request.query_params.get('msg') %}<div class="alert success">{{ request.query_params.get('msg') }}</div>{% endif %}
+    <section class="metric-grid compact"><article><span>Username</span><strong>{{ user.username }}</strong></article><article><span>Role</span><strong>{{ user.role.value|title }}</strong></article><article><span>Balance</span><strong>{{ "{:,.2f}".format(balance) }}</strong></article></section>
+    <h3>Change password</h3>
+    <form method="post" action="/profile/password" class="admin-form">
+      <label>Current password<input name="current_password" type="password" required></label>
+      <label>New password<input name="new_password" type="password" minlength="8" required></label>
+      <label>Confirm new password<input name="confirm_password" type="password" minlength="8" required></label>
+      <button type="submit">Update password</button>
+    </form>
+    <h3>Virtual-credit ledger</h3><div class="table-wrap"><table><thead><tr><th>Time</th><th>Type</th><th>Reference</th><th>Amount</th><th>Description</th></tr></thead><tbody>
+    {% for entry in ledger %}<tr><td>{{ entry.created_at }}</td><td>{{ entry.entry_type }}</td><td>{{ entry.reference or '-' }}</td><td>{{ "{:,.2f}".format(entry.amount) }}</td><td>{{ entry.description }}</td></tr>{% else %}<tr><td colspan="5" class="empty">No ledger entries.</td></tr>{% endfor %}
+    </tbody></table></div>
+  {% elif active == 'statement' %}
+    <section class="metric-grid compact"><article><span>Balance</span><strong>{{ "{:,.2f}".format(balance) }}</strong></article></section>
+    <div class="table-wrap"><table><thead><tr><th>Date</th><th>Description</th><th>Type</th><th>Reference</th><th>Amount</th></tr></thead><tbody>
+    {% for entry in ledger %}<tr><td>{{ entry.created_at }}</td><td>{{ entry.description }}</td><td>{{ entry.entry_type }}</td><td>{{ entry.reference or '-' }}</td><td>{{ "{:,.2f}".format(entry.amount) }}</td></tr>{% else %}<tr><td colspan="5" class="empty">No transactions.</td></tr>{% endfor %}
+    </tbody></table></div>
+  {% elif active == 'downlines' %}
+    {% if request.query_params.get('error') %}<div class="alert error">{{ request.query_params.get('error') }}</div>{% endif %}
+    {% if request.query_params.get('msg') %}<div class="alert success">{{ request.query_params.get('msg') }}</div>{% endif %}
+    <div class="table-wrap"><table><thead><tr><th>Username</th><th>Role</th><th>Balance</th><th>Status</th><th>Send credit</th></tr></thead><tbody>
+    {% for account in accounts %}<tr><td>{{ account.username }}</td><td>{{ account.role.value }}</td><td>{{ "{:,.2f}".format(balances[account.id]) }}</td><td>{{ 'Active' if account.active else 'Disabled' }}</td><td><form method="post" action="/payments/{{ account.id }}" class="inline-actions"><input name="amount" type="number" min="0.01" step="0.01" placeholder="Amount" required><input name="description" value="Test transfer" required><input type="hidden" name="direction" value="send"><button type="submit">Send</button></form></td></tr>{% else %}<tr><td colspan="5" class="empty">No downline accounts.</td></tr>{% endfor %}
+    </tbody></table></div>
+  {% elif active == 'telegram-help' %}
+    <div class="stack-list">
+      <article><h3>Telegram Betting — Simulation Reference</h3><p>This page documents the Telegram betting workflow observed on the reference platform. In this simulator, Telegram integration is not connected to any real messaging service.</p></article>
+      <article><h3>How it works</h3><ol><li>Edit the phone number in the downline list or profile.</li><li>Add the service's Telegram bot to contacts.</li><li>Confirm the phone number.</li><li>Submit bets via Telegram message.</li></ol></article>
+      <article><h3>Bet message format</h3><p><code>UserID Day 4DNumber B-S</code></p><ul><li><strong>Day:</strong> 0=Wed/Sat/Sun, 2=Sat/Sun, 3=Wed, 6=Sat, 7=Sun</li><li><strong>4D:</strong> Normal (1234), iBet (1234i), Roll (1234r), kBet (1234k), Wildcard (123*)</li><li><strong>B-S:</strong> 1-=1 Big, -1=1 Small, h-=0.5 Big, q-=0.25 Big</li></ul></article>
+      <article><h3>Confirmation</h3><p>Bets are confirmed only when a reply message with the total amount is received. If no reply within 1 minute, send "last bet" to retry.</p></article>
+    </div>
+  {% elif active == 'payout-guide' %}
+    <h3>Ordinary payouts (1 Big / 1 Small)</h3>
+    <div class="table-wrap"><table><thead><tr><th>Prize</th><th>1 Big</th><th>1 Small</th></tr></thead><tbody>
+    <tr><td>1st</td><td>{{ payout_data.ordinary.big_1st }}</td><td>{{ payout_data.ordinary.small_1st }}</td></tr>
+    <tr><td>2nd</td><td>{{ payout_data.ordinary.big_2nd }}</td><td>{{ payout_data.ordinary.small_2nd }}</td></tr>
+    <tr><td>3rd</td><td>{{ payout_data.ordinary.big_3rd }}</td><td>{{ payout_data.ordinary.small_3rd }}</td></tr>
+    <tr><td>Starter</td><td>{{ payout_data.ordinary.big_starter }}</td><td>{{ payout_data.ordinary.small_starter }}</td></tr>
+    <tr><td>Consolation</td><td>{{ payout_data.ordinary.big_consolation }}</td><td>{{ payout_data.ordinary.small_consolation }}</td></tr>
+    </tbody></table></div>
+    <p class="muted">i-Bet and k-Bet payouts divide the ordinary payout by the permutation count (4, 6, 12, 24). All values are test credits with no cash value.</p>
+  {% endif %}
+</section>
+{% endblock %}

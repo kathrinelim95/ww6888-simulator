@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<main class="login-shell">
+  <section class="login-card">
+    <div class="brand-mark">VC</div>
+    <p class="kicker">CONTROL ENVIRONMENT</p>
+    <h1>Simulation Console</h1>
+    <p class="muted">Sign in to the closed-loop virtual-credit test platform.</p>
+    {% if error %}<div class="alert error">{{ error }}</div>{% endif %}
+    <form method="post" action="/login" class="form-stack">
+      <label>Username<input name="username" autocomplete="username" required></label>
+      <label>Password<input type="password" name="password" autocomplete="current-password" required></label>
+      <button type="submit">Sign in</button>
+    </form>
+  </section>
+</main>
+{% endblock %}

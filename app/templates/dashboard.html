@@ -1,0 +1,12 @@
+{% extends "app_base.html" %}
+{% block app_content %}
+<section class="metric-grid">
+  <article><span>Available test credit</span><strong>{{ "{:,.2f}".format(balance) }}</strong></article>
+  <article><span>Account role</span><strong>{{ user.role.value|title }}</strong></article>
+  <article><span>Environment</span><strong>Sandbox</strong></article>
+</section>
+<section class="panel">
+  <div class="panel-head"><div><p class="kicker">CONTROL CENTRE</p><h2>Dashboard</h2></div><span class="status">Active</span></div>
+  <p class="muted">Use the navigation to manage test markets, virtual entries, settlements, accounts and reports.</p>
+</section>
+{% endblock %}
